@@ -1,0 +1,12 @@
+BINARY=bin/s3backup
+PKG := github.com/fidrasofyan/s3backup/internal
+VERSION := $(shell git describe --tags --always --dirty)
+COMMIT  := $(shell git rev-parse --short HEAD)
+DATE    := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -s -w \
+	-X '$(PKG)/tasks.AppVersion=$(VERSION)' \
+	-X '$(PKG)/tasks.AppCommit=$(COMMIT)' \
+	-X '$(PKG)/tasks.AppBuildTime=$(DATE)'
+
+build:
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd
