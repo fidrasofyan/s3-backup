@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -22,10 +21,9 @@ type AWSConfig struct {
 	Bucket          string `yaml:"bucket"`
 }
 
-func InitializeConfig() {
+func InitializeConfig() error {
 	if _, err := os.Stat("config.yaml"); err == nil {
-		fmt.Println("config.yaml already exists")
-		return
+		return fmt.Errorf("config.yaml already exists")
 	}
 
 	fmt.Println("Initializing config.yaml...")
@@ -43,13 +41,15 @@ func InitializeConfig() {
 
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
-		log.Fatalf("Failed to generate config: %v", err)
+		return fmt.Errorf("failed to generate config: %v", err)
 	}
 
 	err = os.WriteFile("config.yaml", data, 0644)
 	if err != nil {
-		log.Fatalf("Failed to write config: %v", err)
+		return fmt.Errorf("failed to write config: %v", err)
 	}
 
 	fmt.Println("Config initialized successfully")
+
+	return nil
 }
