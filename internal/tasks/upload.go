@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -98,7 +99,7 @@ func Upload(params *UploadParams) {
 			if err != nil {
 				log.Fatalf("Failed to get relative path: %v", err)
 			}
-			s3Key = fmt.Sprintf("%s/%s", params.RemoteDir, s3Key)
+			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(params.RemoteDir, "/"), s3Key)
 
 			multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, fi, &s3Key)
 		}(&fileInfo)
