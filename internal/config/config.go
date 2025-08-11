@@ -18,10 +18,15 @@ type Config struct {
 
 var Cfg Config
 
-func LoadConfig() error {
-	viper.AddConfigPath(".")
-	viper.SetConfigName("config")
+func LoadConfig(configPath string) {
 	viper.SetConfigType("yaml")
+
+	if configPath != "" {
+		viper.SetConfigFile(configPath)
+	} else {
+		viper.AddConfigPath(".")
+		viper.SetConfigName("config")
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Failed to read config file: %v", err)
@@ -59,6 +64,4 @@ func LoadConfig() error {
 	if Cfg.RemoteDir == "" {
 		log.Fatal("remote_dir is required")
 	}
-
-	return nil
 }

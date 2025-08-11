@@ -6,10 +6,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var configPath string
+
 var uploadCmd = &cobra.Command{
 	Use:   "upload",
-	Short: "Upload directory to S3",
+	Short: "Upload directory contents to S3",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Load config
+		if configPath != "" {
+			config.LoadConfig(configPath)
+		} else {
+			config.LoadConfig("")
+		}
+
 		tasks.Upload(&tasks.UploadParams{
 			AWSEndpoint:        config.Cfg.AWSEndpoint,
 			AWSRegion:          config.Cfg.AWSRegion,
@@ -23,5 +32,8 @@ var uploadCmd = &cobra.Command{
 }
 
 func init() {
+	// Flags
+	uploadCmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to config file. Run 's3backup init' if you don't have one.")
+
 	rootCmd.AddCommand(uploadCmd)
 }
