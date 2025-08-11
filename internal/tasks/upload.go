@@ -31,7 +31,7 @@ type FileInfo struct {
 	Path string
 }
 
-func Upload(params *UploadParams) {
+func Upload(params *UploadParams) error {
 	ctx := context.Background()
 
 	// Load AWS config
@@ -48,7 +48,7 @@ func Upload(params *UploadParams) {
 		),
 	)
 	if err != nil {
-		log.Fatalf("Failed to load AWS config: %v", err)
+		return fmt.Errorf("failed to load AWS config: %v", err)
 	}
 
 	// Create S3 client
@@ -56,7 +56,7 @@ func Upload(params *UploadParams) {
 
 	// Configure multipart uploader
 	uploader := manager.NewUploader(s3Client, func(u *manager.Uploader) {
-		u.PartSize = 10 * 1024 * 1024
+		u.PartSize = 10 * 1024 * 1024 // 10 MB
 		u.Concurrency = 5
 		u.LeavePartsOnError = false
 	})
@@ -80,12 +80,12 @@ func Upload(params *UploadParams) {
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to scan directory: %v", err)
+		return fmt.Errorf("failed to scan directory: %v", err)
 	}
 
 	// Upload files concurrently
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 5)
+	sem := make(chan struct{}, 5) // limit concurrency
 
 	for _, fileInfo := range files {
 		wg.Add(1)
@@ -97,16 +97,22 @@ func Upload(params *UploadParams) {
 
 			s3Key, err := filepath.Rel(params.LocalDir, fi.Path)
 			if err != nil {
-				log.Fatalf("Failed to get relative path: %v", err)
+				fmt.Printf("file %s error: failed to get relative path: %v \n", fi.Name, err)
+				return
 			}
 			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(params.RemoteDir, "/"), s3Key)
 
-			multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, fi, &s3Key)
+			err = multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, fi, &s3Key)
+			if err != nil {
+				log.Println(err)
+			}
 		}(&fileInfo)
 	}
 
 	wg.Wait()
-	log.Println("✅ Upload completed")
+	log.Println("Upload completed!")
+
+	return nil
 }
 
 func isFileExistsInS3(ctx context.Context, s3Client *s3.Client, bucket *string, key *string) bool {
@@ -124,16 +130,15 @@ func multipartUpload(
 	bucket *string,
 	fileInfo *FileInfo,
 	s3Key *string,
-) {
+) error {
 	// Is file exists in S3?
 	if isFileExistsInS3(ctx, s3Client, bucket, s3Key) {
-		log.Printf("Already exists in S3 (skipping): %s", *s3Key)
-		return
+		return fmt.Errorf("file %s already exists in S3 (skipping)", *s3Key)
 	}
 
 	file, err := os.Open(fileInfo.Path)
 	if err != nil {
-		log.Fatalf("Failed to open file: %v", err)
+		return fmt.Errorf("failed to open file %v: %v", fileInfo.Path, err)
 	}
 	defer file.Close()
 
@@ -146,7 +151,10 @@ func multipartUpload(
 
 	if err != nil {
 		log.Fatalf("Failed to upload file: %v", err)
+		return fmt.Errorf("failed to upload file %v: %v", fileInfo.Path, err)
 	}
 
-	log.Printf("Uploaded: %s ", *s3Key)
+	log.Printf("file uploaded: %s", *s3Key)
+
+	return nil
 }

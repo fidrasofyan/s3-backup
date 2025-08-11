@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/fidrasofyan/s3backup/internal/config"
 	"github.com/fidrasofyan/s3backup/internal/tasks"
 	"github.com/spf13/cobra"
@@ -14,12 +16,18 @@ var uploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load config
 		if configPath != "" {
-			config.LoadConfig(configPath)
+			err := config.LoadConfig(configPath)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		} else {
-			config.LoadConfig("")
+			err := config.LoadConfig("")
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
-		tasks.Upload(&tasks.UploadParams{
+		err := tasks.Upload(&tasks.UploadParams{
 			AWSEndpoint:        config.Cfg.AWSEndpoint,
 			AWSRegion:          config.Cfg.AWSRegion,
 			AWSAccessKeyID:     config.Cfg.AWSAccessKeyID,
@@ -28,6 +36,10 @@ var uploadCmd = &cobra.Command{
 			LocalDir:           config.Cfg.LocalDir,
 			RemoteDir:          config.Cfg.RemoteDir,
 		})
+
+		if err != nil {
+			log.Fatalln(err)
+		}
 	},
 }
 

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -18,7 +18,7 @@ type Config struct {
 
 var Cfg Config
 
-func LoadConfig(configPath string) {
+func LoadConfig(configPath string) error {
 	viper.SetConfigType("yaml")
 
 	if configPath != "" {
@@ -29,7 +29,7 @@ func LoadConfig(configPath string) {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Failed to read config file: %v", err)
+		return fmt.Errorf("failed to load config file: %v", err)
 	}
 
 	Cfg = Config{
@@ -44,24 +44,26 @@ func LoadConfig(configPath string) {
 
 	// Validation
 	if Cfg.AWSEndpoint == "" {
-		log.Fatal("aws.endpoint is required")
+		return fmt.Errorf("aws.endpoint is required")
 	}
 	if Cfg.AWSRegion == "" {
-		log.Fatal("aws.region is required")
+		return fmt.Errorf("aws.region is required")
 	}
 	if Cfg.AWSAccessKeyID == "" {
-		log.Fatal("aws.access_key_id is required")
+		return fmt.Errorf("aws.access_key_id is required")
 	}
 	if Cfg.AWSAccessSecretKey == "" {
-		log.Fatal("aws.secret_access_key is required")
+		return fmt.Errorf("aws.secret_access_key is required")
 	}
 	if Cfg.AWSBucket == "" {
-		log.Fatal("aws.bucket is required")
+		return fmt.Errorf("aws.bucket is required")
 	}
 	if Cfg.LocalDir == "" {
-		log.Fatal("local_dir is required")
+		return fmt.Errorf("local_dir is required")
 	}
 	if Cfg.RemoteDir == "" {
-		log.Fatal("remote_dir is required")
+		return fmt.Errorf("remote_dir is required")
 	}
+
+	return nil
 }
