@@ -122,14 +122,6 @@ func Upload(ctx context.Context, params *UploadParams) error {
 	return nil
 }
 
-func isFileExistsInS3(ctx context.Context, s3Client *s3.Client, bucket *string, key *string) bool {
-	_, err := s3Client.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: bucket,
-		Key:    key,
-	})
-	return err == nil
-}
-
 func multipartUpload(
 	ctx context.Context,
 	s3Client *s3.Client,
@@ -139,7 +131,11 @@ func multipartUpload(
 	s3Key *string,
 ) error {
 	// Is file exists in S3?
-	if isFileExistsInS3(ctx, s3Client, bucket, s3Key) {
+	res, _ := s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: bucket,
+		Key:    s3Key,
+	})
+	if res != nil && res.ETag != nil {
 		return fmt.Errorf("file already exists (skipping): %s", *s3Key)
 	}
 
