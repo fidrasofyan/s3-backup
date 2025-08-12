@@ -5,12 +5,11 @@ on:
     tags:
       - 'v*' # only run when pushing tags
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,6 +31,7 @@ jobs:
       - name: Build binary
         run: |
           VERSION=${GITHUB_REF_NAME}
+          rm -rf bin
           make build
           mv bin/s3backup "bin/s3backup-${VERSION}"
 
