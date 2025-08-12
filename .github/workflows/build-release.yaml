@@ -1,0 +1,38 @@
+name: Go Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*' # only run when pushing tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed for git describe in Makefile
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build binary
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          make build
+          mv bin/s3backup "bin/s3backup-${VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/s3backup-*
