@@ -31,9 +31,7 @@ type FileInfo struct {
 	Path string
 }
 
-func Upload(params *UploadParams) error {
-	ctx := context.Background()
-
+func Upload(ctx context.Context, params *UploadParams) error {
 	// Load AWS config
 	cfg, err := config.LoadDefaultConfig(
 		ctx,
@@ -88,9 +86,17 @@ func Upload(params *UploadParams) error {
 	sem := make(chan struct{}, 5) // limit concurrency
 
 	for _, fileInfo := range files {
+		// Check if context is done
+		select {
+		case <-ctx.Done():
+			log.Println("operation canceled or timed out")
+			return ctx.Err()
+		default:
+		}
+
 		wg.Add(1)
 
-		go func(fi *FileInfo) {
+		go func(fi FileInfo) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -102,15 +108,16 @@ func Upload(params *UploadParams) error {
 			}
 			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(params.RemoteDir, "/"), s3Key)
 
-			err = multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, fi, &s3Key)
+			log.Printf("uploading file: %s\n", s3Key)
+			err = multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, &fi, &s3Key)
 			if err != nil {
 				log.Println(err)
 			}
-		}(&fileInfo)
+		}(fileInfo)
 	}
 
 	wg.Wait()
-	log.Println("Upload completed!")
+	log.Println("upload completed!")
 
 	return nil
 }
@@ -133,7 +140,7 @@ func multipartUpload(
 ) error {
 	// Is file exists in S3?
 	if isFileExistsInS3(ctx, s3Client, bucket, s3Key) {
-		return fmt.Errorf("file %s already exists in S3 (skipping)", *s3Key)
+		return fmt.Errorf("file already exists (skipping): %s", *s3Key)
 	}
 
 	file, err := os.Open(fileInfo.Path)
@@ -150,7 +157,6 @@ func multipartUpload(
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to upload file: %v", err)
 		return fmt.Errorf("failed to upload file %v: %v", fileInfo.Path, err)
 	}
 
