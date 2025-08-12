@@ -2,4 +2,4 @@ backup
 bin
 main
 tmp
-*.yaml
+/**.yaml
