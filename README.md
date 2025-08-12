@@ -31,11 +31,11 @@ Upload files:
 Edit `config.yaml`:
 ```yaml
 aws:
-	endpoint: https://your-s3-endpoint
-	region: auto
-	access_key_id: your-access-key
-	secret_access_key: your-secret-key
-	bucket: your-bucket
+  endpoint: https://your-s3-endpoint
+  region: auto
+  access_key_id: your-access-key
+  secret_access_key: your-secret-key
+  bucket: your-bucket
 local_dir: /path/to/local/backup
 remote_dir: remote/path/in/bucket
 ```
