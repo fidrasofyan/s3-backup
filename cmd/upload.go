@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/fidrasofyan/s3backup/internal/config"
 	"github.com/fidrasofyan/s3backup/internal/tasks"
@@ -27,7 +32,20 @@ var uploadCmd = &cobra.Command{
 			}
 		}
 
-		err := tasks.Upload(&tasks.UploadParams{
+		// Context
+		rootCtx, rootCancel := context.WithTimeout(context.Background(), 60*time.Minute)
+		defer rootCancel()
+
+		// Handle Ctrl+C (SIGINT) and SIGTERM
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-sigCh
+			log.Println("Received interrupt signal, exiting...")
+			rootCancel()
+		}()
+
+		err := tasks.Upload(rootCtx, &tasks.UploadParams{
 			AWSEndpoint:        config.Cfg.AWSEndpoint,
 			AWSRegion:          config.Cfg.AWSRegion,
 			AWSAccessKeyID:     config.Cfg.AWSAccessKeyID,
