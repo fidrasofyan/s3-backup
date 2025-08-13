@@ -8,7 +8,7 @@ before:
     - go mod tidy
 
 builds:
-  - id: s3backup
+  - id: s3-backup
     env:
       - CGO_ENABLED=0
     goos:
@@ -21,9 +21,9 @@ builds:
     main: ./cmd
     ldflags:
       - -s -w
-      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppVersion={{.Version}}"
-      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppCommit={{.FullCommit}}"
-      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppBuildTime={{.Now}}"
+      - -X "github.com/fidrasofyan/s3-backup/internal/tasks.AppVersion={{.Version}}"
+      - -X "github.com/fidrasofyan/s3-backup/internal/tasks.AppCommit={{.FullCommit}}"
+      - -X "github.com/fidrasofyan/s3-backup/internal/tasks.AppBuildTime={{.Now}}"
 
 changelog:
   use: github

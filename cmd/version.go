@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/fidrasofyan/s3backup/internal/tasks"
+	"github.com/fidrasofyan/s3-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
 

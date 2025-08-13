@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fidrasofyan/s3backup/internal/config"
-	"github.com/fidrasofyan/s3backup/internal/tasks"
+	"github.com/fidrasofyan/s3-backup/internal/config"
+	"github.com/fidrasofyan/s3-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +63,7 @@ var uploadCmd = &cobra.Command{
 
 func init() {
 	// Flags
-	uploadCmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to config file. Run 's3backup init' if you don't have one.")
+	uploadCmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to config file. Run 's3-backup init' if you don't have one.")
 
 	rootCmd.AddCommand(uploadCmd)
 }

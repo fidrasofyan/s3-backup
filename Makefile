@@ -1,5 +1,5 @@
-BINARY=bin/s3backup
-PKG := github.com/fidrasofyan/s3backup/internal
+BINARY=bin/s3-backup
+PKG := github.com/fidrasofyan/s3-backup/internal
 VERSION := $(shell git describe --tags --always --dirty)
 COMMIT  := $(shell git rev-parse --short HEAD)
 DATE    := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
