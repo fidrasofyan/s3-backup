@@ -1,4 +1,4 @@
-# s3backup
+# s3-backup
 
 A command-line tool for backing up directories to Amazon S3-compatible APIs.
 
@@ -12,18 +12,18 @@ A command-line tool for backing up directories to Amazon S3-compatible APIs.
 ```sh
 make build
 ```
-The binary will be available at `bin/s3backup`.
+The binary will be available at `bin/s3-backup`.
 
 ## Usage
 
 Initialize a config file:
 ```sh
-./bin/s3backup init
+./bin/s3-backup init
 ```
 
 Upload files:
 ```sh
-./bin/s3backup upload --config config.yaml
+./bin/s3-backup upload --config config.yaml
 ```
 
 ## Configuration
@@ -43,7 +43,7 @@ remote_dir: remote/path/in/bucket
 ## Example
 
 ```sh
-./bin/s3backup upload --config config.yaml
+./bin/s3-backup upload --config config.yaml
 ```
 
 ## License
