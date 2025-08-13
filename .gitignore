@@ -1,5 +1,7 @@
 backup
 bin
+dist/
 main
 tmp
 /**.yaml
+!.goreleaser.yaml
