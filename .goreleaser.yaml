@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: s3backup
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd
+    ldflags:
+      - -s -w
+      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppVersion={{.Version}}"
+      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppCommit={{.FullCommit}}"
+      - -X "github.com/fidrasofyan/s3backup/internal/tasks.AppBuildTime={{.Now}}"
+
+changelog:
+  use: github
+  sort: asc
+
+archives:
+  - id: binary
+    formats: [binary]
