@@ -18,7 +18,7 @@ builds:
     goarch:
       - amd64
       - arm64
-    main: ./cmd
+    main: ./cmd/s3-backup
     ldflags:
       - -s -w
       - -X "github.com/fidrasofyan/s3-backup/internal/tasks.AppVersion={{.Version}}"

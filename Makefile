@@ -9,4 +9,4 @@ LDFLAGS := -s -w \
 	-X '$(PKG)/tasks.AppBuildTime=$(DATE)'
 
 build:
-	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/s3-backup
