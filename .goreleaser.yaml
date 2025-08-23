@@ -26,7 +26,6 @@ builds:
 
 changelog:
   use: github
-  format: "{{.SHA}}: {{.Message}} (@{{.AuthorUsername}})"
 
 archives:
   - id: binary
