@@ -56,7 +56,7 @@ var uploadCmd = &cobra.Command{
 		})
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Error: %v", err)
 		}
 	},
 }

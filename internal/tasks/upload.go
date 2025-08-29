@@ -2,17 +2,19 @@ package tasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"golang.org/x/sync/errgroup"
 )
 
 type UploadParams struct {
@@ -55,7 +57,7 @@ func Upload(ctx context.Context, params *UploadParams) error {
 	// Configure multipart uploader
 	uploader := manager.NewUploader(s3Client, func(u *manager.Uploader) {
 		u.PartSize = 10 * 1024 * 1024 // 10 MB
-		u.Concurrency = 5
+		u.Concurrency = 5             // 5 concurrent uploads
 		u.LeavePartsOnError = false
 	})
 
@@ -82,43 +84,36 @@ func Upload(ctx context.Context, params *UploadParams) error {
 	}
 
 	// Upload files concurrently
-	var wg sync.WaitGroup
+	g, gctx := errgroup.WithContext(ctx)
 	sem := make(chan struct{}, 5) // limit concurrency
 
 	for _, fileInfo := range files {
-		// Check if context is done
-		select {
-		case <-ctx.Done():
-			log.Println("operation canceled or timed out")
-			return ctx.Err()
-		default:
-		}
+		fi := fileInfo
 
-		wg.Add(1)
-
-		go func(fi FileInfo) {
-			defer wg.Done()
-			sem <- struct{}{}
+		g.Go(func() error {
+			select {
+			case <-gctx.Done():
+				return gctx.Err() // Cancel if another upload fails
+			case sem <- struct{}{}:
+			}
 			defer func() { <-sem }()
 
 			s3Key, err := filepath.Rel(params.LocalDir, fi.Path)
 			if err != nil {
-				fmt.Printf("file %s error: failed to get relative path: %v \n", fi.Name, err)
-				return
+				return fmt.Errorf("file %s error: failed to get relative path: %v", fi.Name, err)
 			}
 			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(params.RemoteDir, "/"), s3Key)
 
 			log.Printf("uploading file: %s\n", s3Key)
-			err = multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, &fi, &s3Key)
-			if err != nil {
-				log.Println(err)
-			}
-		}(fileInfo)
+			return multipartUpload(ctx, s3Client, uploader, &params.AWSBucket, &fi, &s3Key)
+		})
 	}
 
-	wg.Wait()
-	log.Println("upload completed!")
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("upload failed: %w", err)
+	}
 
+	log.Println("upload completed!")
 	return nil
 }
 
@@ -131,12 +126,17 @@ func multipartUpload(
 	s3Key *string,
 ) error {
 	// Is file exists in S3?
-	res, _ := s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+	res, err := s3Client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: bucket,
 		Key:    s3Key,
 	})
+	var nfe *types.NotFound
+	if err != nil && !errors.As(err, &nfe) {
+		return fmt.Errorf("failed to check if file exists: %v", err)
+	}
 	if res != nil && res.ETag != nil {
-		return fmt.Errorf("file already exists (skipping): %s", *s3Key)
+		log.Printf("file already exists (skipping): %s\n", *s3Key)
+		return nil
 	}
 
 	file, err := os.Open(fileInfo.Path)
