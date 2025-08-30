@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -71,6 +72,11 @@ func LoadConfig(configPath string) error {
 	}
 	if Cfg.RemoteDir == "" {
 		return fmt.Errorf("remote_dir is required")
+	} else {
+		// Remove all leading slash if exists
+		for strings.HasPrefix(Cfg.RemoteDir, "/") {
+			Cfg.RemoteDir = strings.TrimPrefix(Cfg.RemoteDir, "/")
+		}
 	}
 	if len(Cfg.BackupDB) > 0 {
 		for _, db := range Cfg.BackupDB {
