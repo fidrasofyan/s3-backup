@@ -7,18 +7,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	AWS       AWSConfig `yaml:"aws"`
-	LocalDir  string    `yaml:"local_dir"`
-	RemoteDir string    `yaml:"remote_dir"`
-}
-
 type AWSConfig struct {
 	Endpoint        string `yaml:"endpoint"`
 	Region          string `yaml:"region"`
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
 	Bucket          string `yaml:"bucket"`
+}
+
+type BackupDBConfig struct {
+	Type     string `yaml:"type"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"dbname"`
+}
+
+type Config struct {
+	AWS       AWSConfig        `yaml:"aws"`
+	BackupDB  []BackupDBConfig `yaml:"backup_db"`
+	LocalDir  string           `yaml:"local_dir"`
+	RemoteDir string           `yaml:"remote_dir"`
 }
 
 func InitializeConfig() error {
@@ -34,6 +44,16 @@ func InitializeConfig() error {
 			AccessKeyID:     "abc123",
 			SecretAccessKey: "abc123",
 			Bucket:          "my-bucket",
+		},
+		BackupDB: []BackupDBConfig{
+			{
+				Type:     "mysql",
+				Host:     "localhost",
+				Port:     "3306",
+				User:     "root",
+				Password: "password",
+				DBName:   "mydb",
+			},
 		},
 		LocalDir:  "/home/user/backup",
 		RemoteDir: "backup",

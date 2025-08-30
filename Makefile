@@ -8,5 +8,8 @@ LDFLAGS := -s -w \
 	-X '$(PKG)/tasks.AppCommit=$(COMMIT)' \
 	-X '$(PKG)/tasks.AppBuildTime=$(DATE)'
 
-build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/s3-backup
+build: test
+	 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/s3-backup
+
+test:
+	staticcheck ./...

@@ -6,14 +6,28 @@ import (
 	"github.com/spf13/viper"
 )
 
+type AWSConfig struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	Region          string `mapstructure:"region"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	Bucket          string `mapstructure:"bucket"`
+}
+
+type BackupDBConfig struct {
+	Type     string `mapstructure:"type"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
+}
+
 type Config struct {
-	AWSEndpoint        string
-	AWSRegion          string
-	AWSAccessKeyID     string
-	AWSAccessSecretKey string
-	AWSBucket          string
-	LocalDir           string
-	RemoteDir          string
+	AWS       AWSConfig        `mapstructure:"aws"`
+	BackupDB  []BackupDBConfig `mapstructure:"backup_db"`
+	LocalDir  string           `mapstructure:"local_dir"`
+	RemoteDir string           `mapstructure:"remote_dir"`
 }
 
 var Cfg Config
@@ -32,30 +46,24 @@ func LoadConfig(configPath string) error {
 		return fmt.Errorf("failed to load config file: %v", err)
 	}
 
-	Cfg = Config{
-		AWSEndpoint:        viper.GetString("aws.endpoint"),
-		AWSRegion:          viper.GetString("aws.region"),
-		AWSAccessKeyID:     viper.GetString("aws.access_key_id"),
-		AWSAccessSecretKey: viper.GetString("aws.secret_access_key"),
-		AWSBucket:          viper.GetString("aws.bucket"),
-		LocalDir:           viper.GetString("local_dir"),
-		RemoteDir:          viper.GetString("remote_dir"),
+	if err := viper.Unmarshal(&Cfg); err != nil {
+		return fmt.Errorf("failed to decode config: %v", err)
 	}
 
 	// Validation
-	if Cfg.AWSEndpoint == "" {
+	if Cfg.AWS.Endpoint == "" {
 		return fmt.Errorf("aws.endpoint is required")
 	}
-	if Cfg.AWSRegion == "" {
+	if Cfg.AWS.Region == "" {
 		return fmt.Errorf("aws.region is required")
 	}
-	if Cfg.AWSAccessKeyID == "" {
+	if Cfg.AWS.AccessKeyID == "" {
 		return fmt.Errorf("aws.access_key_id is required")
 	}
-	if Cfg.AWSAccessSecretKey == "" {
+	if Cfg.AWS.SecretAccessKey == "" {
 		return fmt.Errorf("aws.secret_access_key is required")
 	}
-	if Cfg.AWSBucket == "" {
+	if Cfg.AWS.Bucket == "" {
 		return fmt.Errorf("aws.bucket is required")
 	}
 	if Cfg.LocalDir == "" {
@@ -63,6 +71,28 @@ func LoadConfig(configPath string) error {
 	}
 	if Cfg.RemoteDir == "" {
 		return fmt.Errorf("remote_dir is required")
+	}
+	if len(Cfg.BackupDB) > 0 {
+		for _, db := range Cfg.BackupDB {
+			if db.Type != "mysql" && db.Type != "mariadb" {
+				return fmt.Errorf("backup_db.type is invalid")
+			}
+			if db.Host == "" {
+				return fmt.Errorf("backup_db.host is required")
+			}
+			if db.Port == "" {
+				return fmt.Errorf("backup_db.port is required")
+			}
+			if db.User == "" {
+				return fmt.Errorf("backup_db.user is required")
+			}
+			if db.Password == "" {
+				return fmt.Errorf("backup_db.password is required")
+			}
+			if db.DBName == "" {
+				return fmt.Errorf("backup_db.dbname is required")
+			}
+		}
 	}
 
 	return nil
