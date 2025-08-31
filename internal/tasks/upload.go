@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 
 	"github.com/fidrasofyan/s3-backup/internal/config"
 	"github.com/fidrasofyan/s3-backup/internal/service"
@@ -16,7 +17,6 @@ import (
 
 type FileInfo struct {
 	Name string
-	Size int64
 	Path string
 }
 
@@ -35,16 +35,15 @@ func Upload(ctx context.Context) error {
 	// Scan directory
 	files := []FileInfo{}
 
-	err = filepath.Walk(config.Cfg.LocalDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(config.Cfg.LocalDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
 		files = append(files, FileInfo{
-			Name: info.Name(),
-			Size: info.Size(),
+			Name: d.Name(),
 			Path: path,
 		})
 		return nil
@@ -57,6 +56,11 @@ func Upload(ctx context.Context) error {
 	// Upload files concurrently
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
+
+	var (
+		uploadedCounter int32
+		skippedCounter  int32
+	)
 
 	for _, fileInfo := range files {
 		fi := fileInfo
@@ -80,6 +84,7 @@ func Upload(ctx context.Context) error {
 				return fmt.Errorf("failed to check if file exists: %v", err)
 			}
 			if *exists {
+				atomic.AddInt32(&skippedCounter, 1)
 				return nil
 			}
 
@@ -94,13 +99,17 @@ func Upload(ctx context.Context) error {
 
 			if err != nil {
 				if errors.Is(err, service.ErrEmptyFile) {
-					log.Printf("file is empty (skipped): %s\n", fileInfo.Path)
+					log.Printf("file is empty (skipped): %s\n", fi.Path)
+
+					atomic.AddInt32(&skippedCounter, 1)
 					return nil
 				}
-				return fmt.Errorf("failed to upload file %v: %v", fileInfo.Path, err)
+				return fmt.Errorf("failed to upload file %v: %v", fi.Path, err)
 			}
 
 			log.Printf("file uploaded: %s", s3Key)
+
+			atomic.AddInt32(&uploadedCounter, 1)
 			return nil
 		})
 	}
@@ -109,6 +118,6 @@ func Upload(ctx context.Context) error {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 
-	log.Println("upload complete!")
+	log.Printf("uploaded: %d | skipped: %d\n", uploadedCounter, skippedCounter)
 	return nil
 }
