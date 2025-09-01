@@ -16,6 +16,7 @@ import (
 var (
 	backupDBConfigPathFlag string
 	backupDBNoUploadFlag   bool
+	backupDBDeleteDaysFlag int
 )
 
 var backupDBCmd = &cobra.Command{
@@ -53,9 +54,25 @@ var backupDBCmd = &cobra.Command{
 		}()
 
 		// Start backup
-		err := tasks.BackupDB(ctx, backupDBNoUploadFlag)
+		err := tasks.BackupDB(ctx)
 		if err != nil {
 			log.Fatalf("Error: %v", err)
+		}
+
+		// Delete old backup
+		if backupDBDeleteDaysFlag > 0 {
+			err := tasks.DeleteOldBackup(ctx, backupDBDeleteDaysFlag)
+			if err != nil {
+				log.Fatalf("Error: %v", err)
+			}
+		}
+
+		// Upload
+		if !backupDBNoUploadFlag {
+			err := tasks.Upload(ctx)
+			if err != nil {
+				log.Fatalf("Error: %v", err)
+			}
 		}
 	},
 }
@@ -63,7 +80,8 @@ var backupDBCmd = &cobra.Command{
 func init() {
 	// Flags
 	backupDBCmd.Flags().StringVarP(&backupDBConfigPathFlag, "config", "c", "", "Path to config file. Run 's3-backup init' if you don't have one.")
-	backupDBCmd.Flags().BoolVar(&backupDBNoUploadFlag, "no-upload", false, "Don't upload")
+	backupDBCmd.Flags().BoolVar(&backupDBNoUploadFlag, "no-upload", false, "Don't upload to S3")
+	backupDBCmd.Flags().IntVar(&backupDBDeleteDaysFlag, "delete-days", 0, "Delete old backups older than N days (file ends with *.sql.gz)")
 
 	rootCmd.AddCommand(backupDBCmd)
 }

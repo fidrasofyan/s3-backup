@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -69,6 +70,14 @@ func LoadConfig(configPath string) error {
 	}
 	if Cfg.LocalDir == "" {
 		return fmt.Errorf("local_dir is required")
+	} else {
+		info, err := os.Stat(Cfg.LocalDir)
+		if err != nil {
+			return fmt.Errorf("local_dir %v is invalid", Cfg.LocalDir)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("local_dir %v is not a directory", Cfg.LocalDir)
+		}
 	}
 	if Cfg.RemoteDir == "" {
 		return fmt.Errorf("remote_dir is required")

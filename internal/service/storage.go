@@ -43,6 +43,17 @@ func (s *StorageService) IsFileExists(ctx context.Context, bucket, key string) (
 	return aws.Bool(false), nil
 }
 
+func (s *StorageService) Remove(ctx context.Context, bucket, key string) error {
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type MultipartUploadParams struct {
 	PartSize    int64
 	Concurrency int

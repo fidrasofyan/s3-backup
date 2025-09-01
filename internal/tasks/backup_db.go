@@ -17,7 +17,7 @@ func commandExists(cmd string) bool {
 	return err == nil
 }
 
-func BackupDB(ctx context.Context, noUpload bool) error {
+func BackupDB(ctx context.Context) error {
 	// Prerequisites
 	var backupCommand string
 	if commandExists("mysqldump") {
@@ -79,14 +79,6 @@ func BackupDB(ctx context.Context, noUpload bool) error {
 		}
 		if err := file.Close(); err != nil {
 			return fmt.Errorf("closing file failed: %w", err)
-		}
-	}
-
-	// Upload
-	if !noUpload {
-		err := Upload(ctx)
-		if err != nil {
-			return fmt.Errorf("upload failed: %v", err)
 		}
 	}
 
