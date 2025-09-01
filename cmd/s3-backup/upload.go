@@ -21,15 +21,9 @@ var uploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load config
 		if uploadConfigPathFlag != "" {
-			err := config.LoadConfig(uploadConfigPathFlag)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			config.MustLoadConfig(uploadConfigPathFlag)
 		} else {
-			err := config.LoadConfig("")
-			if err != nil {
-				log.Fatalln(err)
-			}
+			config.MustLoadConfig("")
 		}
 
 		// Context

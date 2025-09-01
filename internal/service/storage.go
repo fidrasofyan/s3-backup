@@ -21,11 +21,11 @@ var (
 	ErrEmptyFile = errors.New("empty file")
 )
 
-type StorageService struct {
+type Storage struct {
 	client *s3.Client
 }
 
-func (s *StorageService) IsFileExists(ctx context.Context, bucket, key string) (*bool, error) {
+func (s *Storage) IsFileExists(ctx context.Context, bucket, key string) (*bool, error) {
 	res, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -43,7 +43,7 @@ func (s *StorageService) IsFileExists(ctx context.Context, bucket, key string) (
 	return aws.Bool(false), nil
 }
 
-func (s *StorageService) Remove(ctx context.Context, bucket, key string) error {
+func (s *Storage) Remove(ctx context.Context, bucket, key string) error {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -54,7 +54,7 @@ func (s *StorageService) Remove(ctx context.Context, bucket, key string) error {
 	return nil
 }
 
-type MultipartUploadParams struct {
+type UploadParams struct {
 	PartSize    int64
 	Concurrency int
 	Bucket      string
@@ -62,7 +62,7 @@ type MultipartUploadParams struct {
 	Filepath    string
 }
 
-func (s *StorageService) MultipartUpload(ctx context.Context, params *MultipartUploadParams) error {
+func (s *Storage) Upload(ctx context.Context, params *UploadParams) error {
 	// Validate parameters
 	if params == nil {
 		return errors.New("params cannot be nil")
@@ -180,7 +180,7 @@ func (s *StorageService) MultipartUpload(ctx context.Context, params *MultipartU
 	return nil
 }
 
-func (s *StorageService) singlePartUpload(ctx context.Context, bucket, key string, file *os.File) error {
+func (s *Storage) singlePartUpload(ctx context.Context, bucket, key string, file *os.File) error {
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek to beginning of file: %w", err)
 	}
@@ -196,7 +196,7 @@ func (s *StorageService) singlePartUpload(ctx context.Context, bucket, key strin
 	return nil
 }
 
-func (s *StorageService) abortMultipartUpload(bucket, key string, uploadId *string) {
+func (s *Storage) abortMultipartUpload(bucket, key string, uploadId *string) {
 	abortCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -210,14 +210,14 @@ func (s *StorageService) abortMultipartUpload(bucket, key string, uploadId *stri
 	}
 }
 
-type NewStorageServiceParams struct {
+type NewStorageParams struct {
 	AWSEndpoint        string
 	AWSRegion          string
 	AWSAccessKeyID     string
 	AWSSecretAccessKey string
 }
 
-func NewStorageService(ctx context.Context, params *NewStorageServiceParams) (*StorageService, error) {
+func NewStorage(ctx context.Context, params *NewStorageParams) (*Storage, error) {
 	// Validate parameters
 	if params == nil {
 		return nil, errors.New("params cannot be nil")
@@ -254,7 +254,7 @@ func NewStorageService(ctx context.Context, params *NewStorageServiceParams) (*S
 		o.UsePathStyle = true
 	})
 
-	return &StorageService{
+	return &Storage{
 		client: s3Client,
 	}, nil
 }

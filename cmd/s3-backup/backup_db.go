@@ -25,15 +25,9 @@ var backupDBCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load config
 		if backupDBConfigPathFlag != "" {
-			err := config.LoadConfig(backupDBConfigPathFlag)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			config.MustLoadConfig(backupDBConfigPathFlag)
 		} else {
-			err := config.LoadConfig("")
-			if err != nil {
-				log.Fatalln(err)
-			}
+			config.MustLoadConfig("")
 		}
 
 		// Context

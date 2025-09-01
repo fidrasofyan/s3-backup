@@ -15,7 +15,7 @@ import (
 )
 
 func DeleteOldBackup(ctx context.Context, days int) error {
-	storageService, err := service.NewStorageService(ctx, &service.NewStorageServiceParams{
+	storageService, err := service.NewStorage(ctx, &service.NewStorageParams{
 		AWSEndpoint:        config.Cfg.AWS.Endpoint,
 		AWSRegion:          config.Cfg.AWS.Region,
 		AWSAccessKeyID:     config.Cfg.AWS.AccessKeyID,

@@ -22,7 +22,7 @@ type FileInfo struct {
 
 func Upload(ctx context.Context) error {
 	// Create storage service
-	storageService, err := service.NewStorageService(ctx, &service.NewStorageServiceParams{
+	storageService, err := service.NewStorage(ctx, &service.NewStorageParams{
 		AWSEndpoint:        config.Cfg.AWS.Endpoint,
 		AWSRegion:          config.Cfg.AWS.Region,
 		AWSAccessKeyID:     config.Cfg.AWS.AccessKeyID,
@@ -72,6 +72,7 @@ func Upload(ctx context.Context) error {
 			default:
 			}
 
+			// Use relative path to include subdirectories
 			s3Key, err := filepath.Rel(config.Cfg.LocalDir, fi.Path)
 			if err != nil {
 				return fmt.Errorf("file %s error: failed to get relative path: %v", fi.Name, err)
@@ -89,7 +90,7 @@ func Upload(ctx context.Context) error {
 			}
 
 			// Upload file
-			err = storageService.MultipartUpload(ctx, &service.MultipartUploadParams{
+			err = storageService.Upload(ctx, &service.UploadParams{
 				PartSize:    5 * 1024 * 1024, // 5 MB
 				Concurrency: 5,
 				Bucket:      config.Cfg.AWS.Bucket,
