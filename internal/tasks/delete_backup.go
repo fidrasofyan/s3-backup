@@ -14,7 +14,7 @@ import (
 	"github.com/fidrasofyan/s3-backup/internal/service"
 )
 
-func DeleteOldBackup(ctx context.Context, days int) error {
+func DeleteOldBackup(ctx context.Context, days int, since time.Time) error {
 	storageService, err := service.NewStorage(ctx, &service.NewStorageParams{
 		AWSEndpoint:        config.Cfg.AWS.Endpoint,
 		AWSRegion:          config.Cfg.AWS.Region,
@@ -25,7 +25,7 @@ func DeleteOldBackup(ctx context.Context, days int) error {
 		return fmt.Errorf("failed to create storage service: %v", err)
 	}
 
-	cutoffTime := time.Now().AddDate(0, 0, -days)
+	cutoffTime := since.AddDate(0, 0, -days)
 	var deletedCounter int32
 
 	err = filepath.WalkDir(config.Cfg.LocalDir, func(path string, d os.DirEntry, err error) error {

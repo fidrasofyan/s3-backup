@@ -72,6 +72,8 @@ func Upload(ctx context.Context) error {
 			default:
 			}
 
+			log.Printf("uploading file: %s\n", fi.Path)
+
 			// Use relative path to include subdirectories
 			s3Key, err := filepath.Rel(config.Cfg.LocalDir, fi.Path)
 			if err != nil {

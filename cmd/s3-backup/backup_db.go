@@ -23,6 +23,8 @@ var backupDBCmd = &cobra.Command{
 	Use:   "backup-db",
 	Short: "Backup database and upload to S3",
 	Run: func(cmd *cobra.Command, args []string) {
+		startTime := time.Now()
+
 		// Load config
 		if backupDBConfigPathFlag != "" {
 			config.MustLoadConfig(backupDBConfigPathFlag)
@@ -55,7 +57,7 @@ var backupDBCmd = &cobra.Command{
 
 		// Delete old backup
 		if backupDBDeleteDaysFlag > 0 {
-			err := tasks.DeleteOldBackup(ctx, backupDBDeleteDaysFlag)
+			err := tasks.DeleteOldBackup(ctx, backupDBDeleteDaysFlag, startTime)
 			if err != nil {
 				log.Fatalf("Error: %v", err)
 			}
