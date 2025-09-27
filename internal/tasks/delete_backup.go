@@ -25,7 +25,10 @@ func DeleteOldBackup(ctx context.Context, days int, since time.Time) error {
 		return fmt.Errorf("failed to create storage service: %v", err)
 	}
 
-	cutoffTime := since.AddDate(0, 0, -days)
+	cutoffTime := since
+	if days > 0 {
+		cutoffTime = since.AddDate(0, 0, -days)
+	}
 	var deletedCounter int32
 
 	err = filepath.WalkDir(config.Cfg.LocalDir, func(path string, d os.DirEntry, err error) error {
