@@ -27,10 +27,10 @@ type BackupDBConfig struct {
 }
 
 type Config struct {
-	AWS       AWSConfig        `mapstructure:"aws"`
-	BackupDB  []BackupDBConfig `mapstructure:"backup_db"`
-	LocalDir  string           `mapstructure:"local_dir"`
-	RemoteDir string           `mapstructure:"remote_dir"`
+	AWS              AWSConfig        `mapstructure:"aws"`
+	DBConfigurations []BackupDBConfig `mapstructure:"backup_db"`
+	LocalDir         string           `mapstructure:"local_dir"`
+	RemoteDir        string           `mapstructure:"remote_dir"`
 }
 
 func New(configPath string) (*Config, error) {
@@ -93,7 +93,7 @@ func New(configPath string) (*Config, error) {
 		return nil, errors.New("remote_dir is required")
 	}
 
-	for i, db := range cfg.BackupDB {
+	for i, db := range cfg.DBConfigurations {
 		if db.Type != "mysql" && db.Type != "mariadb" {
 			return nil, fmt.Errorf("backup_db[%d].type is invalid", i)
 		}

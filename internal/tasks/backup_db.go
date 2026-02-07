@@ -28,7 +28,7 @@ func BackupDB(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("mysqldump or mariadb-dump command not found")
 	}
 
-	for _, dbConfig := range cfg.BackupDB {
+	for _, dbConfig := range cfg.DBConfigurations {
 		if err := backupSingleDB(ctx, backupCommand, cfg, dbConfig); err != nil {
 			return err
 		}
