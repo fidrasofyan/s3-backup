@@ -12,7 +12,6 @@ var initCmd = &cobra.Command{
 	Short: "Initialize config file",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := tasks.InitializeConfig()
-
 		if err != nil {
 			log.Fatalln(err)
 		}

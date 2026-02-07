@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fidrasofyan/s3-backup/internal/config"
+	"github.com/fidrasofyan/s3-backup/internal/service"
 	"github.com/fidrasofyan/s3-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
@@ -20,10 +21,9 @@ var uploadCmd = &cobra.Command{
 	Short: "Upload directory contents to S3",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load config
-		if uploadConfigPathFlag != "" {
-			config.MustLoadConfig(uploadConfigPathFlag)
-		} else {
-			config.MustLoadConfig("")
+		cfg, err := config.New(uploadConfigPathFlag)
+		if err != nil {
+			log.Fatalf("Error: %v", err)
 		}
 
 		// Context
@@ -39,7 +39,18 @@ var uploadCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if err := tasks.Upload(ctx); err != nil {
+		// Create storage service
+		storage, err := service.NewStorage(ctx, &service.NewStorageParams{
+			AWSEndpoint:        cfg.AWS.Endpoint,
+			AWSRegion:          cfg.AWS.Region,
+			AWSAccessKeyID:     cfg.AWS.AccessKeyID,
+			AWSSecretAccessKey: cfg.AWS.SecretAccessKey,
+		})
+		if err != nil {
+			log.Fatalf("Error: %v", err)
+		}
+
+		if err := tasks.Upload(ctx, cfg, storage); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 	},

@@ -14,24 +14,14 @@ import (
 	"github.com/fidrasofyan/s3-backup/internal/service"
 )
 
-func DeleteOldBackup(ctx context.Context, days int, since time.Time) error {
-	storageService, err := service.NewStorage(ctx, &service.NewStorageParams{
-		AWSEndpoint:        config.Cfg.AWS.Endpoint,
-		AWSRegion:          config.Cfg.AWS.Region,
-		AWSAccessKeyID:     config.Cfg.AWS.AccessKeyID,
-		AWSSecretAccessKey: config.Cfg.AWS.SecretAccessKey,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create storage service: %v", err)
-	}
-
+func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *service.Storage, days int, since time.Time) error {
 	cutoffTime := since
 	if days > 0 {
 		cutoffTime = since.AddDate(0, 0, -days)
 	}
 	var deletedCounter int32
 
-	err = filepath.WalkDir(config.Cfg.LocalDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(cfg.LocalDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -61,14 +51,14 @@ func DeleteOldBackup(ctx context.Context, days int, since time.Time) error {
 			}
 
 			// Use relative path to include subdirectories
-			s3Key, err := filepath.Rel(config.Cfg.LocalDir, path)
+			s3Key, err := filepath.Rel(cfg.LocalDir, path)
 			if err != nil {
 				return fmt.Errorf("file %s error: failed to get relative path: %v", fileInfo.Name(), err)
 			}
-			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(config.Cfg.RemoteDir, "/"), s3Key)
+			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(cfg.RemoteDir, "/"), s3Key)
 
 			// Delete file from S3
-			err = storageService.Remove(ctx, config.Cfg.AWS.Bucket, s3Key)
+			err = storageService.Remove(ctx, cfg.AWS.Bucket, s3Key)
 			if err != nil {
 				return fmt.Errorf("file %s error: failed to delete from S3: %v", s3Key, err)
 			}

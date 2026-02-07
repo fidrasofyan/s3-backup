@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fidrasofyan/s3-backup/internal/config"
+	"github.com/fidrasofyan/s3-backup/internal/service"
 	"github.com/fidrasofyan/s3-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
@@ -26,10 +27,9 @@ var backupDBCmd = &cobra.Command{
 		startTime := time.Now()
 
 		// Load config
-		if backupDBConfigPathFlag != "" {
-			config.MustLoadConfig(backupDBConfigPathFlag)
-		} else {
-			config.MustLoadConfig("")
+		cfg, err := config.New(backupDBConfigPathFlag)
+		if err != nil {
+			log.Fatalf("Error: %v", err)
 		}
 
 		// Context
@@ -50,23 +50,31 @@ var backupDBCmd = &cobra.Command{
 		}()
 
 		// Start backup
-		err := tasks.BackupDB(ctx)
+		if err := tasks.BackupDB(ctx, cfg); err != nil {
+			log.Fatalf("Error: %v", err)
+		}
+
+		// Create storageService service for S3 operations
+		storageService, err := service.NewStorage(ctx, &service.NewStorageParams{
+			AWSEndpoint:        cfg.AWS.Endpoint,
+			AWSRegion:          cfg.AWS.Region,
+			AWSAccessKeyID:     cfg.AWS.AccessKeyID,
+			AWSSecretAccessKey: cfg.AWS.SecretAccessKey,
+		})
 		if err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 
 		// Delete old backup
 		if backupDBDeleteDaysFlag >= 0 {
-			err := tasks.DeleteOldBackup(ctx, backupDBDeleteDaysFlag, startTime)
-			if err != nil {
+			if err := tasks.DeleteOldBackup(ctx, cfg, storageService, backupDBDeleteDaysFlag, startTime); err != nil {
 				log.Fatalf("Error: %v", err)
 			}
 		}
 
 		// Upload
 		if !backupDBNoUploadFlag {
-			err := tasks.Upload(ctx)
-			if err != nil {
+			if err := tasks.Upload(ctx, cfg, storageService); err != nil {
 				log.Fatalf("Error: %v", err)
 			}
 		}
