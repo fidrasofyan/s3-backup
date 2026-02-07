@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/fidrasofyan/s3-backup/internal/config"
@@ -26,7 +25,8 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 		return nil
 	}
 
-	var backupFiles []backupFile
+	// 1. Scan directory for backup files
+	var allFiles []backupFile
 	err := filepath.WalkDir(cfg.LocalDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -49,7 +49,7 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 			return fmt.Errorf("failed to get file info: %v", err)
 		}
 
-		backupFiles = append(backupFiles, backupFile{
+		allFiles = append(allFiles, backupFile{
 			Path:    path,
 			ModTime: info.ModTime(),
 			Name:    info.Name(),
@@ -60,42 +60,75 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 		return fmt.Errorf("failed to scan directory: %v", err)
 	}
 
-	// Sort files by ModTime descending (newest first)
-	sort.Slice(backupFiles, func(i, j int) bool {
-		return backupFiles[i].ModTime.After(backupFiles[j].ModTime)
-	})
-
-	if len(backupFiles) <= keepLast {
-		log.Printf("keep last: %d | total files: %d | deleted: 0\n", keepLast, len(backupFiles))
-		return nil
+	// 2. Group files by database name
+	// The filename format is: [DBName]_[YYYYMMDD]-[HHMMSS].sql.gz
+	// Extract [DBName] by finding the last underscore and removing that suffix.
+	filesByDB := make(map[string][]backupFile)
+	for _, f := range allFiles {
+		dbName := extractDBName(f.Name)
+		filesByDB[dbName] = append(filesByDB[dbName], f)
 	}
 
-	// Files to delete are from index keepLast onwards
-	filesToDelete := backupFiles[keepLast:]
+	// 3. For each database, keep only the last N backups
 	var deletedCounter int32
+	var totalFiles int32
 
-	for _, file := range filesToDelete {
-		log.Println("deleting file:", file.Path)
-		if err := os.Remove(file.Path); err != nil {
-			return fmt.Errorf("file %s error: failed to delete from local: %v", file.Path, err)
+	for dbName, files := range filesByDB {
+		totalFiles += int32(len(files))
+
+		if len(files) <= keepLast {
+			log.Printf("DB: %s | keep last: %d | total files: %d | deleted: 0\n", dbName, keepLast, len(files))
+			continue
 		}
 
-		// Use relative path to include subdirectories
-		relPath, err := filepath.Rel(cfg.LocalDir, file.Path)
-		if err != nil {
-			return fmt.Errorf("file %s error: failed to get relative path: %v", file.Name, err)
-		}
-		s3Key := fmt.Sprintf("%s/%s", strings.TrimLeft(cfg.RemoteDir, "/"), relPath)
+		// Sort files by ModTime descending (newest first)
+		sort.Slice(files, func(i, j int) bool {
+			return files[i].ModTime.After(files[j].ModTime)
+		})
 
-		// Delete file from S3
-		err = storageService.Remove(ctx, cfg.AWS.Bucket, s3Key)
-		if err != nil {
-			return fmt.Errorf("file %s error: failed to delete from S3: %v", s3Key, err)
-		}
+		// Files to delete are from index keepLast onwards
+		filesToDelete := files[keepLast:]
+		for _, file := range filesToDelete {
+			log.Printf("DB: %s | deleting file: %s\n", dbName, file.Path)
+			if err := os.Remove(file.Path); err != nil {
+				return fmt.Errorf("file %s error: failed to delete from local: %v", file.Path, err)
+			}
 
-		atomic.AddInt32(&deletedCounter, 1)
+			// Use relative path to include subdirectories for S3 key
+			relPath, err := filepath.Rel(cfg.LocalDir, file.Path)
+			if err != nil {
+				return fmt.Errorf("file %s error: failed to get relative path: %v", file.Name, err)
+			}
+			s3Key := fmt.Sprintf("%s/%s", strings.TrimLeft(cfg.RemoteDir, "/"), relPath)
+
+			// Delete file from S3
+			err = storageService.Remove(ctx, cfg.AWS.Bucket, s3Key)
+			if err != nil {
+				// We don't want to stop everything if S3 delete fails (maybe it was already deleted or never uploaded)
+				log.Printf("Warning: failed to delete %s from S3: %v\n", s3Key, err)
+			}
+
+			deletedCounter++
+		}
+		log.Printf("DB: %s | keep last: %d | total files: %d | deleted: %d\n", dbName, keepLast, len(files), len(filesToDelete))
 	}
 
-	log.Printf("keep last: %d | total files: %d | deleted: %d\n", keepLast, len(backupFiles), deletedCounter)
+	log.Printf("Total files scanned: %d | Total deleted: %d\n", totalFiles, deletedCounter)
 	return nil
+}
+
+// extractDBName extracts the database name from the backup filename.
+// Format: [DBName]_YYYYMMDD-HHMMSS.sql.gz
+func extractDBName(filename string) string {
+	// Remove .sql.gz suffix
+	base := strings.TrimSuffix(filename, ".sql.gz")
+
+	// Split by underscore. The last part is YYYYMMDD-HHMMSS
+	parts := strings.Split(base, "_")
+	if len(parts) < 2 {
+		return base
+	}
+
+	// Join everything except the last part (the timestamp)
+	return strings.Join(parts[:len(parts)-1], "_")
 }

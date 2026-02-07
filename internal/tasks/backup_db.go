@@ -46,7 +46,7 @@ func backupSingleDB(ctx context.Context, backupCommand string, cfg *config.Confi
 		"%s/%s_%s.sql.gz",
 		cfg.LocalDir,
 		dbConfig.DBName,
-		time.Now().Format("20060102_150405"),
+		time.Now().Format("20060102-150405"),
 	)
 	file, err := os.Create(filename)
 	if err != nil {
