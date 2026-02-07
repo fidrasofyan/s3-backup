@@ -20,8 +20,8 @@ type backupFile struct {
 	Name    string
 }
 
-func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *service.Storage, keepLast int) error {
-	if keepLast <= 0 {
+func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *service.Storage, keep int) error {
+	if keep <= 0 {
 		return nil
 	}
 
@@ -76,8 +76,8 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 	for dbName, files := range filesByDB {
 		totalFiles += int32(len(files))
 
-		if len(files) <= keepLast {
-			log.Printf("DB: %s | keep last: %d | total files: %d | deleted: 0\n", dbName, keepLast, len(files))
+		if len(files) <= keep {
+			log.Printf("DB: %s | keep: %d | total files: %d | deleted: 0\n", dbName, keep, len(files))
 			continue
 		}
 
@@ -87,7 +87,7 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 		})
 
 		// Files to delete are from index keepLast onwards
-		filesToDelete := files[keepLast:]
+		filesToDelete := files[keep:]
 		for _, file := range filesToDelete {
 			log.Printf("DB: %s | deleting file: %s\n", dbName, file.Path)
 			if err := os.Remove(file.Path); err != nil {
@@ -110,7 +110,7 @@ func DeleteOldBackup(ctx context.Context, cfg *config.Config, storageService *se
 
 			deletedCounter++
 		}
-		log.Printf("DB: %s | keep last: %d | total files: %d | deleted: %d\n", dbName, keepLast, len(files), len(filesToDelete))
+		log.Printf("DB: %s | keep: %d | total files: %d | deleted: %d\n", dbName, keep, len(files), len(filesToDelete))
 	}
 
 	log.Printf("Total files scanned: %d | Total deleted: %d\n", totalFiles, deletedCounter)

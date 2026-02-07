@@ -17,7 +17,7 @@ import (
 var (
 	backupDBConfigPathFlag string
 	backupDBNoUploadFlag   bool
-	backupDBKeepLastFlag   int
+	backupDBKeepFlag       int
 )
 
 var backupDBCmd = &cobra.Command{
@@ -65,7 +65,7 @@ var backupDBCmd = &cobra.Command{
 		}
 
 		// Delete old backup
-		if err := tasks.DeleteOldBackup(ctx, cfg, storageService, backupDBKeepLastFlag); err != nil {
+		if err := tasks.DeleteOldBackup(ctx, cfg, storageService, backupDBKeepFlag); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 
@@ -82,7 +82,7 @@ func init() {
 	// Flags
 	backupDBCmd.Flags().StringVarP(&backupDBConfigPathFlag, "config", "c", "", "Path to config file. Run 's3-backup init' if you don't have one.")
 	backupDBCmd.Flags().BoolVar(&backupDBNoUploadFlag, "no-upload", false, "Don't upload to S3")
-	backupDBCmd.Flags().IntVar(&backupDBKeepLastFlag, "keep-last", 0, "Number of recent backup files to keep. 0 (default) means keep all.")
+	backupDBCmd.Flags().IntVar(&backupDBKeepFlag, "keep", 0, "Number of recent backup files to keep. 0 (default) means keep all.")
 
 	rootCmd.AddCommand(backupDBCmd)
 }
