@@ -61,14 +61,12 @@ func Upload(ctx context.Context, cfg *config.Config, storageService *service.Sto
 			default:
 			}
 
-			log.Printf("uploading file: %s\n", fi.Path)
-
 			// Use relative path to include subdirectories
-			s3Key, err := filepath.Rel(cfg.LocalDir, fi.Path)
+			relPath, err := filepath.Rel(cfg.LocalDir, fi.Path)
 			if err != nil {
 				return fmt.Errorf("file %s error: failed to get relative path: %v", fi.Name, err)
 			}
-			s3Key = fmt.Sprintf("%s/%s", strings.TrimLeft(cfg.RemoteDir, "/"), s3Key)
+			s3Key := fmt.Sprintf("%s/%s", strings.TrimLeft(cfg.RemoteDir, "/"), relPath)
 
 			// Is file exists in S3?
 			exists, err := storageService.IsFileExists(ctx, cfg.AWS.Bucket, s3Key)
@@ -81,6 +79,7 @@ func Upload(ctx context.Context, cfg *config.Config, storageService *service.Sto
 			}
 
 			// Upload file
+			log.Printf("uploading file: %s\n", fi.Path)
 			err = storageService.Upload(ctx, &service.UploadParams{
 				PartSize:    5 * 1024 * 1024, // 5 MB
 				Concurrency: 5,
