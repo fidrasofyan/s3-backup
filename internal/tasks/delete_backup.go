@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fidrasofyan/s3-backup/internal/config"
-	"github.com/fidrasofyan/s3-backup/internal/service"
+	"github.com/fidrasofyan/db-backup/internal/config"
+	"github.com/fidrasofyan/db-backup/internal/service"
 )
 
 type backupFile struct {

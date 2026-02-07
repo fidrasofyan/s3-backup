@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "s3-backup",
+	Use:   "db-backup",
 	Short: "Backup directory to S3",
 }
 

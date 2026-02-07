@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/fidrasofyan/s3-backup/internal/tasks"
+	"github.com/fidrasofyan/db-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
 

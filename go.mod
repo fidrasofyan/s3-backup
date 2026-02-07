@@ -1,4 +1,4 @@
-module github.com/fidrasofyan/s3-backup
+module github.com/fidrasofyan/db-backup
 
 go 1.25.7
 

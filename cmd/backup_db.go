@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fidrasofyan/s3-backup/internal/config"
-	"github.com/fidrasofyan/s3-backup/internal/service"
-	"github.com/fidrasofyan/s3-backup/internal/tasks"
+	"github.com/fidrasofyan/db-backup/internal/config"
+	"github.com/fidrasofyan/db-backup/internal/service"
+	"github.com/fidrasofyan/db-backup/internal/tasks"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ var (
 
 var backupDBCmd = &cobra.Command{
 	Use:   "backup-db",
-	Short: "Backup database and upload to S3",
+	Short: "Backup database and upload to S3-compatible storage",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Load config
@@ -80,7 +80,7 @@ var backupDBCmd = &cobra.Command{
 
 func init() {
 	// Flags
-	backupDBCmd.Flags().StringVarP(&backupDBConfigPathFlag, "config", "c", "", "Path to config file. Run 's3-backup init' if you don't have one.")
+	backupDBCmd.Flags().StringVarP(&backupDBConfigPathFlag, "config", "c", "", "Path to config file. Run 'db-backup init' to create a config file.")
 	backupDBCmd.Flags().BoolVar(&backupDBNoUploadFlag, "no-upload", false, "Don't upload to S3")
 	backupDBCmd.Flags().IntVar(&backupDBKeepFlag, "keep", 0, "Number of recent backup files to keep. 0 (default) means keep all.")
 

@@ -1,5 +1,5 @@
-BINARY=bin/s3-backup
-PKG := github.com/fidrasofyan/s3-backup/internal
+BINARY=bin/db-backup
+PKG := github.com/fidrasofyan/db-backup/internal
 VERSION := $(shell git describe --tags --always --dirty)
 COMMIT  := $(shell git rev-parse --short HEAD)
 DATE    := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -11,5 +11,5 @@ LDFLAGS := -s -w \
 build:
 	go vet ./...
 	staticcheck ./...
-	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/s3-backup
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd
 	

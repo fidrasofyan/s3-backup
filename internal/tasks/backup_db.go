@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/fidrasofyan/s3-backup/internal/config"
+	"github.com/fidrasofyan/db-backup/internal/config"
 )
 
 func commandExists(cmd string) bool {
