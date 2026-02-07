@@ -73,7 +73,18 @@ func New(configPath string) (*Config, error) {
 	}
 	info, err := os.Stat(cfg.LocalDir)
 	if err != nil {
-		return nil, fmt.Errorf("local_dir %v is invalid: %w", cfg.LocalDir, err)
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(cfg.LocalDir, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create local_dir %v: %w", cfg.LocalDir, err)
+			}
+			// Update info after creation
+			info, err = os.Stat(cfg.LocalDir)
+			if err != nil {
+				return nil, fmt.Errorf("local_dir %v is invalid after creation: %w", cfg.LocalDir, err)
+			}
+		} else {
+			return nil, fmt.Errorf("local_dir %v is invalid: %w", cfg.LocalDir, err)
+		}
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("local_dir %v is not a directory", cfg.LocalDir)
